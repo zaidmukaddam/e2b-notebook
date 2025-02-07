@@ -11,6 +11,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import * as monaco from 'monaco-editor';
 
 interface NotebookCellProps {
   code: string;
@@ -58,6 +59,12 @@ export function NotebookCell({
 
   const handleEditorDidMount = (editor: any) => {
     editorRef.current = editor;
+
+    // Add keyboard shortcut for cell execution
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+      handleExecuteClick();
+    });
+
     editor.onDidContentSizeChange(() => {
       updateEditorHeight();
     });
@@ -93,7 +100,7 @@ export function NotebookCell({
       onGenerateAI();
       return;
     }
-    
+
     if (isAIGenerated) {
       setShowAIWarning(true);
     } else {
@@ -103,7 +110,7 @@ export function NotebookCell({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const files = Array.from(e.target.files).filter(file => 
+      const files = Array.from(e.target.files).filter(file =>
         file.type === 'text/csv' || file.name.endsWith('.csv')
       );
       onUploadFiles(files);
@@ -111,8 +118,8 @@ export function NotebookCell({
   };
 
   // Helper to check if output contains an error
-  const hasError = output?.toLowerCase().includes('error') || 
-                  output?.toLowerCase().includes('exception');
+  const hasError = output?.toLowerCase().includes('error') ||
+    output?.toLowerCase().includes('exception');
 
   return (
     <div className="rounded-lg border border-[#EBEBEB] dark:border-[#333333] overflow-hidden mb-4">
@@ -272,8 +279,13 @@ export function NotebookCell({
             guides: {
               indentation: true
             },
-            placeholder: '# Type your Python code here\n# Example:\n# import pandas as pd\n# import matplotlib.pyplot as plt',
-            readOnly: isGeneratingCode // Make editor read-only during generation
+            placeholder: `# Type your Python code here, or:
+# - Upload CSV files to analyze data
+# - Use AI to generate code
+# - Press ${navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+Enter to run`,
+            showUnused: true,
+            smoothScrolling: true,
+            readOnly: isGeneratingCode
           }}
         />
       </div>
@@ -352,7 +364,7 @@ export function NotebookCell({
                 )}
               </div>
             )}
-            
+
             {analysis && (
               <div className="mt-4 p-4 bg-[#FFF3E5] dark:bg-[#333333] rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
